@@ -1,1 +1,15 @@
-window.ARHORNGOR_COURSES=[{name:'無場地',holes:18},{name:'八里',holes:18},{name:'旭陽',holes:18},{name:'老爺關西',holes:18},{name:'新豐',holes:27,sections:['A區','B區','C區']},{name:'再興',holes:18},{name:'幸福',holes:27,sections:['東區','西區','北區']},{name:'臺灣高爾夫俱樂部（老淡水）',holes:18},{name:'龍潭',holes:18},{name:'永漢',holes:18},{name:'寶山',holes:18},{name:'大溪',holes:27,sections:['東區・翠鳥','中區・白鷺','西區・畫眉']},{name:'山溪地',holes:18},{name:'長庚',holes:27,sections:['南區','中區','北區']},{name:'林口',holes:27,sections:['東區','南區','西區']},{name:'桃園',holes:27,sections:['東區','南區','西區']},{name:'東方',holes:18},{name:'美麗華',holes:36,sections:['A區','B區','C區','D區']},{name:'揚昇',holes:18},{name:'台北',holes:18},{name:'國華',holes:18},{name:'台豐',holes:18},{name:'南峰',holes:18},{name:'霧峰',holes:18},{name:'全國',holes:18},{name:'台中國際',holes:27,sections:['A區','B區','C區']},{name:'彰化',holes:18},{name:'嘉南',holes:18},{name:'南一',holes:18},{name:'台南',holes:18},{name:'高雄',holes:18},{name:'信誼',holes:18},{name:'觀音山',holes:18},{name:'山湖觀',holes:18},{name:'大崗山',holes:18},{name:'棕梠湖',holes:18},{name:'嘉義',holes:18},{name:'花蓮',holes:18}];
+window.ARHORNGOR_COURSES=[
+{name:'無場地',holes:18,city:''},
+{name:'臺灣高爾夫俱樂部（老淡水）',holes:18,city:'新北市'},{name:'揮皇（新淡水）',holes:18,city:'新北市'},{name:'大屯',holes:18,city:'新北市'},{name:'國華',holes:18,city:'新北市'},{name:'八里國際',holes:18,city:'新北市'},{name:'美麗華',holes:36,city:'新北市',sections:['A區','B區','C區','D區']},{name:'林口',holes:27,city:'新北市',sections:['東區','南區','西區']},{name:'幸福',holes:27,city:'新北市',sections:['東區','西區','北區']},{name:'東華',holes:18,city:'新北市'},{name:'黃金海岸（北海）',holes:18,city:'新北市'},{name:'濱海',holes:18,city:'新北市'},{name:'翡翠',holes:18,city:'新北市'},
+{name:'台北',holes:36,city:'桃園市',sections:['A區','B區','C區','D區']},{name:'東方',holes:18,city:'桃園市'},{name:'明台國際（龍潭）',holes:18,city:'桃園市'},{name:'永漢',holes:18,city:'桃園市'},{name:'揚昇',holes:18,city:'桃園市'},{name:'大溪',holes:27,city:'桃園市',sections:['東區','中區','西區']},{name:'桃園',holes:27,city:'桃園市',sections:['東區','南區','西區']},{name:'福爾摩莎第一',holes:36,city:'桃園市',sections:['A區','B區','C區','D區']},{name:'長庚',holes:27,city:'桃園市',sections:['南區','中區','北區']},{name:'福爾摩莎楊梅',holes:18,city:'桃園市'},{name:'統帥',holes:18,city:'桃園市'},
+{name:'老爺關西',holes:18,city:'新竹縣'},{name:'立益',holes:18,city:'新竹縣'},{name:'新豐（新竹）',holes:27,city:'新竹縣',sections:['西區','東區','中區']},{name:'山溪地',holes:18,city:'新竹縣'},{name:'旭陽',holes:18,city:'新竹縣'},{name:'再興',holes:18,city:'新竹縣'},{name:'寶山',holes:18,city:'新竹縣'},{name:'東方之星（東方日星）',holes:18,city:'新竹縣'},
+{name:'皇家',holes:18,city:'苗栗縣'},{name:'全國花園',holes:18,city:'苗栗縣'},
+{name:'台中國際',holes:27,city:'臺中市',sections:['A區','B區','C區']},{name:'豐原',holes:18,city:'臺中市'},{name:'霧峰',holes:18,city:'臺中市'},{name:'空軍清泉崗',holes:18,city:'臺中市'},
+{name:'南峰',holes:18,city:'南投縣'},{name:'松柏嶺',holes:18,city:'南投縣'},
+{name:'台豐',holes:18,city:'彰化縣'},{name:'彰化',holes:18,city:'彰化縣'},
+{name:'東洋棕梠湖',holes:18,city:'嘉義縣'},
+{name:'台南',holes:18,city:'臺南市'},{name:'南一',holes:18,city:'臺南市'},{name:'嘉南',holes:18,city:'臺南市'},{name:'斑芝花',holes:27,city:'臺南市',sections:['A區','B區','C區']},{name:'南寶',holes:27,city:'臺南市',sections:['A區','B區','C區']},
+{name:'觀音山',holes:18,city:'高雄市'},{name:'大崗山',holes:18,city:'高雄市'},{name:'信誼',holes:18,city:'高雄市'},
+{name:'山湖觀',holes:27,city:'屏東縣',sections:['A區','B區','C區']},
+{name:'礁溪',holes:18,city:'宜蘭縣'},{name:'花蓮',holes:18,city:'花蓮縣'}
+];
