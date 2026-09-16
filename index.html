@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#082f5b">
+  <title>Arhorngor</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#edf3f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"PingFang TC",sans-serif;color:#142b40}.app{max-width:520px;min-height:100vh;margin:auto;background:#fff;padding:calc(env(safe-area-inset-top) + 24px) 18px calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column}.mark{width:62px;height:62px;border-radius:18px;background:#082f5b;color:#fff;display:flex;align-items:center;justify-content:center;font:900 32px Georgia,serif;margin-top:7vh}.brand{font:900 35px Georgia,"Times New Roman",serif;color:#082f5b;margin-top:18px}.tag{font-size:10px;letter-spacing:2px;color:#6e8ca4;margin-top:5px}.intro{font-size:13px;line-height:1.6;color:#708492;margin-top:26px}.buttons{display:grid;gap:10px;margin-top:28px}.btn{height:58px;border:0;border-radius:12px;background:#082f5b;color:#fff;font-size:17px;font-weight:850}.btn.secondary{background:#eaf4fc;color:#082f5b}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.status{margin-top:18px;padding:11px 12px;background:#f5f8fa;border-radius:10px;font-size:11px;color:#668094}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2e8b62;margin-right:6px}.footer{margin-top:auto;text-align:center;font-size:9px;color:#a5b1b9;padding-top:30px}.version{font-size:9px;color:#9eacb5;margin-top:5px}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="mark">A</div>
+    <div class="brand">Arhorngor</div>
+    <div class="tag">PLAY · TRACK · IMPROVE</div>
+    <div class="intro">極簡高爾夫球局紀錄。下場專心打球，資料留在你的裝置。</div>
+    <div class="buttons">
+      <button class="btn" id="start">＋ 開始新球局</button>
+      <div class="row">
+        <button class="btn secondary" id="history">歷史球局</button>
+        <button class="btn secondary" id="bag">我的球袋</button>
+      </div>
+    </div>
+    <div class="status"><span class="dot"></span>GitHub Build 已正常載入</div>
+    <div class="footer">Created by Hwadefa<div class="version">Arhorngor V0.9.6 · Foundation Build</div></div>
+  </main>
+  <script>
+    document.getElementById('start').onclick=()=>alert('首頁運作正常。下一步接入球場選擇。');
+    document.getElementById('history').onclick=()=>alert('首頁運作正常。下一步接入歷史球局。');
+    document.getElementById('bag').onclick=()=>alert('首頁運作正常。下一步接入我的球袋。');
+  </script>
+</body>
+</html>
