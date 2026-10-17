@@ -158,3 +158,15 @@ test('new-round UI writes the selected Bogey Base mode and computes selected cou
 test('invalid mode rejected; comparison switch only updates URL and links retain basis',()=>{
  const e=env();const r=C.create(meta());r.scoringMode='unexpected';assert.throws(()=>C.validateRound(r));const buttons=[{dataset:{basis:'bogey'}}];e.document.querySelectorAll=()=>buttons;e.context.RoundView.bind();buttons[0].onclick();assert.equal(e.context.location.search,'?basis=bogey');assert.match(e.context.RoundView.url('analysis.html','bogey'),/basis=bogey/);assert.equal(e.localStorage.length,0);
 });
+test('Miramar scorecard route preserves West/South labels, both start orders and 72/90 targets',()=>{
+ const e=env();e.run('courses.js');const course=e.context.ARHORNGOR_COURSES.find(c=>c.name==='美麗華（西／南）');
+ assert.deepEqual(Array.from(course.pars),[4,4,5,4,3,4,4,3,5,4,3,5,4,4,3,4,4,5]);
+ assert.equal(course.pars.slice(0,9).reduce((a,b)=>a+b),36);assert.equal(course.pars.slice(9).reduce((a,b)=>a+b),36);
+ for(const startHole of [1,10]){
+  const r=C.create({course:course.name,courseHoles:course.holes,sections:course.sections,pars:course.pars,startHole,scoringMode:'bogey'});
+  assert.equal(C.stats(r).targetPar,90);assert.equal(C.stats(r,'standard').targetPar,72);
+  assert.equal(C.holeLabel(r,r.roundSlots[0].courseHoleId),startHole===1?'西區 第1洞':'南區 第1洞');
+  assert.equal(C.holeLabel(r,r.roundSlots[9].courseHoleId),startHole===1?'南區 第1洞':'西區 第1洞');
+ }
+ e.run('app.js');e.run('new-round-v2.js');vm.runInContext("showStart(ARHORNGOR_COURSES.find(c=>c.name==='美麗華（西／南）'))",e.context);assert.match(e.nodes.app.innerHTML,/西區 第1洞/);assert.match(e.nodes.app.innerHTML,/南區 第1洞/);assert.match(e.nodes.bogeyGoal.textContent,/90/);
+});

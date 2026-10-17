@@ -123,7 +123,7 @@
     return next;
   }
   function holeLabel(r, n) {
-    return r.courseHoles > 18 ? `${r.sections?.[Math.floor((n - 1) / 9)] || '區' + (Math.floor((n - 1) / 9) + 1)} 第${(n - 1) % 9 + 1}洞` : `第${n}洞`;
+    return r.courseHoles > 18 || r.sections?.length === 2 ? `${r.sections?.[Math.floor((n - 1) / 9)] || '區' + (Math.floor((n - 1) / 9) + 1)} 第${(n - 1) % 9 + 1}洞` : `第${n}洞`;
   }
   function replaceSection(r, firstSlotId, section) {
     const index=r.roundSlots.findIndex(s=>s.id===firstSlotId);

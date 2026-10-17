@@ -12,7 +12,7 @@ for(const name of fs.readdirSync(root)){
  }
 }
 for(const name of ['round.html','summary.html','history-round.html','analysis.html','history-analysis.html','history.html','new-round.html','index.html']){
- const html=fs.readFileSync(path.join(root,name),'utf8');assert.ok(html.includes('round-core.js?v=21'),name);assert.ok(html.includes('round-store.js?v=21'),name);
+ const html=fs.readFileSync(path.join(root,name),'utf8');assert.ok(html.includes('round-core.js?v=22'),name);assert.ok(html.includes('round-store.js?v=21'),name);
 }
 assert.ok(!fs.readFileSync(path.join(root,'round.html'),'utf8').includes('round-v8.js'));
 console.log(`${count} JavaScript files parsed; inline scripts, local references and V2 entry points checked.`);
