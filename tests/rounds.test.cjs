@@ -31,7 +31,7 @@ test('Miramar official four sections: all 16 ordered pairs, both modes, UI and s
   assert.deepEqual(Array.from(course.sections),['北區','東區','南區','西區']);assert.deepEqual(Array.from(course.pars),expected.flat());
   e.document.querySelector=()=>({value:mode});e.run('app.js');e.run('new-round-v2.js');
   vm.runInContext("showStart(ARHORNGOR_COURSES.find(c=>c.name==='美麗華（官方四區）'))",e.context);
-  vm.runInContext(`startHole=${a*9+1}`,e.context);e.nodes.secondSection.value=String(b);vm.runInContext('updateBogeyGoal();beginRound()',e.context);
+  e.nodes.firstSection.value=String(a);e.nodes.secondSection.value=String(b);vm.runInContext('updateBogeyGoal();beginRound()',e.context);
   assert.match(e.nodes.bogeyGoal.textContent,/新手 Par 90/);
   const entry=e.S.active(),r=entry.round;
   assert.deepEqual(Array.from(r.roundSlots,s=>s.par),[...expected[a],...expected[b]]);
@@ -207,4 +207,29 @@ test('Miramar scorecard route preserves West/South labels, both start orders and
   assert.equal(C.holeLabel(r,r.roundSlots[9].courseHoleId),startHole===1?'南區 第1洞':'西區 第1洞');
  }
  e.run('app.js');e.run('new-round-v2.js');vm.runInContext("showStart(ARHORNGOR_COURSES.find(c=>c.name==='美麗華（西／南）'))",e.context);assert.match(e.nodes.app.innerHTML,/西區 第1洞/);assert.match(e.nodes.app.innerHTML,/南區 第1洞/);assert.match(e.nodes.bogeyGoal.textContent,/90/);
+});
+
+
+test('multi-section start requires both choices and changing front nine preserves back nine',()=>{
+ const e=env();e.run('courses.js');e.run('app.js');e.run('new-round-v2.js');
+ vm.runInContext("showStart(ARHORNGOR_COURSES.find(c=>c.name==='美麗華（官方四區）'))",e.context);
+ assert.equal(e.nodes.begin.disabled,true);const before=e.localStorage.dump();vm.runInContext('beginRound()',e.context);assert.deepEqual(e.localStorage.dump(),before);
+ e.nodes.firstSection.value='1';e.nodes.firstSection.onchange();assert.equal(e.nodes.begin.disabled,true);
+ e.nodes.secondSection.value='0';e.nodes.secondSection.onchange();assert.equal(e.nodes.begin.disabled,false);assert.match(e.nodes.routePreview.textContent,/東區 → 北區/);
+ e.nodes.firstSection.value='3';e.nodes.firstSection.onchange();assert.equal(e.nodes.secondSection.value,'0');assert.match(e.nodes.routePreview.textContent,/西區 → 北區/);
+});
+
+test('East then North advances from ninth to North first and survives reload in both modes',()=>{
+ for(const mode of ['standard','bogey']){
+  const e=env();e.run('courses.js');e.document.querySelector=()=>({value:mode});e.run('app.js');e.run('new-round-v2.js');
+  vm.runInContext("showStart(ARHORNGOR_COURSES.find(c=>c.name==='美麗華（官方四區）'))",e.context);
+  e.nodes.firstSection.value='1';e.nodes.secondSection.value='0';e.nodes.firstSection.onchange();vm.runInContext('beginRound()',e.context);
+  for(const f of ['round-v2.js','round-actions.js','caddies.js'])e.run(f);
+  vm.runInContext('showCaddie=done=>done();initRound();',e.context);
+  for(let i=0;i<9;i++)vm.runInContext('addClub("1W");finishHole()',e.context);
+  const r=e.S.active().round;assert.equal(r.currentSlotId,'slot-10');assert.equal(r.roundSlots[9].courseHoleId,1);assert.equal(r.roundSlots[9].par,4);
+  assert.deepEqual(Array.from(r.playSections),[1,0]);assert.match(e.nodes.app.innerHTML,/北區 第1洞/);
+  const other=env({},'active',e.localStorage);for(const f of ['round-v2.js','round-actions.js','caddies.js'])other.run(f);vm.runInContext('initRound()',other.context);
+  assert.match(other.nodes.app.innerHTML,/北區 第1洞/);assert.equal(other.S.active().round.roundSlots.filter(s=>s.status==='completed').length,9);
+ }
 });
