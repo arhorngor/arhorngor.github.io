@@ -15,7 +15,7 @@ function env(initial={},mode='active',shared){
  const document={body:{...element(),dataset:{mode}},getElementById(id){return nodes[id]||(nodes[id]=element())},createElement:element,querySelectorAll(){return []}};
  const context=vm.createContext({console,localStorage,document,Date,JSON,Math,crypto:require('node:crypto').webcrypto,Blob,URL,URLSearchParams,Image:function(){},setTimeout(){return 1},clearTimeout(){},location:{search:'',href:'',replace(x){this.href=x}},alert(){},confirm(){return true},addEventListener(){}});context.window=context;context.globalThis=context;
  function run(file){return vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});}
- run('round-core.js');run('round-store.js');
+ run('round-core.js');run('round-store.js');run('scoring-view.js');
  return {S:context.RoundStore,C:context.RoundCore,localStorage,nodes,document,context,run};
 }
 const meta=(extra={})=>({course:'Test',courseHoles:18,startHole:1,pars:Array(18).fill(4),...extra});
@@ -118,4 +118,43 @@ test('recording UI completes holes, preserves completion on navigation, and inde
 });
 test('penalty add/remove and undo reflect exact stroke totals',()=>{
  const e=env();e.S.create(meta());for(const f of ['round-v2.js','round-actions.js','caddies.js'])e.run(f);vm.runInContext('initRound();addClub("1W");addShotPenalty(0,"OB 前方補球");',e.context);assert.equal(C.stats(e.S.active().round).score,3);vm.runInContext('showShotPenalty(1)',e.context);e.nodes.removePenalty.onclick();assert.equal(C.stats(e.S.active().round).score,1);vm.runInContext('addShotPenalty(0,"OB 原地重打");undo();',e.context);assert.equal(C.stats(e.S.active().round).score,1);
+});
+test('Bogey Base maps official 3/4/5 to 4/5/6 without changing stored Pars',()=>{
+ const r=C.create(meta({scoringMode:'bogey',pars:[3,4,5,...Array(15).fill(4)]})),before=JSON.stringify(r);
+ assert.deepEqual(r.roundSlots.slice(0,3).map(s=>C.scoringPar(s.par,C.scoringMode(r))),[4,5,6]);
+ assert.deepEqual(r.roundSlots.slice(0,3).map(s=>s.par),[3,4,5]);C.stats(r);C.stats(r,'standard');assert.equal(JSON.stringify(r),before);
+ assert.equal(C.scoringMode(legacy()),'standard');assert.equal(C.scoringPar(null,'bogey'),null);
+});
+test('a 90-stroke round is E against beginner 90 and +18 against official 72',()=>{
+ const r=C.create(meta({scoringMode:'bogey',pars:Array.from({length:18},(_,i)=>3+i%3)}));
+ r.roundSlots.forEach((s,i)=>fill(r,i,[...Array(s.par-1).fill({club:'9I'}),{club:'PT'},{club:'PT'}],s.par));
+ const novice=C.stats(r),standard=C.stats(r,'standard');assert.equal(novice.targetPar,90);assert.equal(standard.targetPar,72);assert.equal(novice.score,90);assert.equal(standard.score,90);assert.equal(novice.relative,0);assert.equal(standard.relative,18);assert.equal(novice.gir,18);assert.equal(standard.gir,0);assert.equal(novice.halves[0].targetPar,45);
+});
+test('non-Par72 and incomplete courses use actual known Par, never a fabricated 90',()=>{
+ const r=C.create(meta({scoringMode:'bogey',pars:[3,3,...Array(16).fill(4)]}));assert.equal(C.stats(r).targetPar,88);
+ r.roundSlots[2].par=null;assert.equal(C.stats(r).targetPar,null);assert.equal(C.stats(r).knownParCount,17);
+ fill(r,0,Array(4).fill({club:'PT'}),3);fill(r,2,Array(7).fill({club:'PT'}),null);assert.equal(C.stats(r).relative,0);assert.equal(C.stats(r).relativeN,1);assert.equal(C.stats(r).score,11);
+});
+test('Bogey Base survives backup/import and finish while original Par stays intact',()=>{
+ const e=env(),a=e.S.create(meta({scoringMode:'bogey'})),r=fill(a.round,0,Array(5).fill({club:'PT'}));e.S.update(a.id,r);e.S.finish(a.id,r);const b=e.S.backup(),other=env();other.S.applyImport(b,other.S.previewImport(b));const saved=other.S.entries()[0].round;assert.equal(saved.scoringMode,'bogey');assert.equal(saved.roundSlots[0].par,4);assert.equal(C.stats(saved).relative,0);assert.equal(C.stats(saved,'standard').relative,1);
+});
+test('overview and analysis default to round mode; comparison changes no storage',()=>{
+ const e=env(),a=e.S.create(meta({scoringMode:'bogey'})),r=fill(a.round,0,[{club:'1W'},{club:'9I'},{club:'58°'},{club:'PT'},{club:'PT'}]);e.S.update(a.id,r);const before=e.localStorage.getItem(e.S.KEY);
+ e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對新手Par · 1洞'],'E');assert.match(e.nodes.app.innerHTML,/本場新手 Par <strong>90/);e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);assert.match(e.nodes.app.innerHTML,/並非正式GIR/);
+ e.context.location.search='?basis=standard';e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對Par · 1洞'],'+1');e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>0<\/b>攻果嶺/);assert.equal(e.localStorage.getItem(e.S.KEY),before);
+ e.S.finish(a.id,r);e.document.body.dataset.mode='history';e.context.location.search='?basis=bogey';e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對新手Par · 1洞'],'E');e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);
+});
+test('recording and caddie use beginner Par; navigation and save retain official Par',()=>{
+ const e=env(),a=e.S.create(meta({scoringMode:'bogey'}));for(const f of ['round-v2.js','round-actions.js','caddies.js'])e.run(f);
+ vm.runInContext('initRound();shots=Array(5).fill({club:"PT"});save();render();showCaddie(()=>{});',e.context);
+ assert.match(e.nodes.app.innerHTML,/新手 Par 5/);assert.equal(vm.runInContext('rel()',e.context),'E');assert.match(e.document.body.children.at(-1).innerHTML,/class="rinTitle">PAR</);assert.match(e.document.body.children.at(-1).innerHTML,/BOGEY BASE/);assert.equal(e.S.active().round.roundSlots[0].par,4);
+});
+test('beginner Par3 is not misclassified as an original Par4 driving hole',()=>{
+ const e=env(),a=e.S.create(meta({scoringMode:'bogey',pars:Array(18).fill(3)})),r=fill(a.round,0,[{club:'7I'},{club:'58°'},{club:'PT'},{club:'PT'}],3);e.S.update(a.id,r);e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>—<\/b>開球/);assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);
+});
+test('new-round UI writes the selected Bogey Base mode and computes selected course target',()=>{
+ const e=env();e.context.ARHORNGOR_COURSES=[{name:'Test',holes:18,pars:Array(18).fill(4)}];e.document.querySelector=()=>({value:'bogey'});e.run('app.js');e.run('new-round-v2.js');vm.runInContext('showStart(ARHORNGOR_COURSES[0]);',e.context);assert.match(e.nodes.app.innerHTML,/Bogey Base · 新手模式/);assert.match(e.nodes.bogeyGoal.textContent,/90/);vm.runInContext('beginRound()',e.context);assert.equal(e.S.active().round.scoringMode,'bogey');assert.equal(C.stats(e.S.active().round).targetPar,90);
+});
+test('invalid mode rejected; comparison switch only updates URL and links retain basis',()=>{
+ const e=env();const r=C.create(meta());r.scoringMode='unexpected';assert.throws(()=>C.validateRound(r));const buttons=[{dataset:{basis:'bogey'}}];e.document.querySelectorAll=()=>buttons;e.context.RoundView.bind();buttons[0].onclick();assert.equal(e.context.location.search,'?basis=bogey');assert.match(e.context.RoundView.url('analysis.html','bogey'),/basis=bogey/);assert.equal(e.localStorage.length,0);
 });

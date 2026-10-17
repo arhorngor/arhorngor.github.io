@@ -2,9 +2,24 @@
 
 Base: `025ed28bdd2ab14624453934521a4cd116620458`.
 
+## Bogey Base update (v21)
+
+New rounds expose Standard / Bogey Base choices and retain `scoringMode: 'standard' | 'bogey'`.
+Missing mode on older rounds means Standard. Stored slot `par` and course `pars` always remain official values.
+`RoundCore.scoringPar` adds exactly one in Bogey Base; no raw scores, penalties, or source Pars are changed.
+Full-course target is the sum of the selected 18 slots: a Par72 course becomes 90, Par70 becomes 88, and missing Pars leave the full target unknown.
+Recording, relative scores, and caddie reactions use the round mode. Historical lists identify rounds started in Bogey Base.
+
+Both overviews and both analysis pages have Standard / Beginner view switches. `basis` in the URL changes only the view and carries between overview and analysis; no storage writes occur when comparing.
+Beginner approach success uses beginner Par minus two, is explicitly labeled as beginner success rather than official GIR, and appears in the existing approach radar axis.
+The legacy driving proxy still uses official Par4/5 holes with an official Par+1 threshold in both modes; actual putt, penalty, short-game, and trouble counts are unchanged.
+This does not implement the separately planned five-axis V2 redesign.
+
+Verification now includes 40 tests, covering both mode defaults, 90=E/+18 comparisons, missing/nonstandard Pars, caddie reactions, mode persistence across backups, view-only switching, and original Par3 classification. Real mobile/browser validation remains outstanding.
+
 ## Entry points
 
-- `round.html` loads `round-core.js`, `round-store.js`, `round-v2.js`, `round-actions.js`, and `caddies.js` (v20).
+- `round.html` loads `round-core.js`, `round-store.js`, `round-v2.js`, `round-actions.js`, and `caddies.js` (v21).
 - `round-v8.js` and `round.js` are retained for source history, but are not current entry points.
 - `report-v2.js` renders both current/history overviews. `analysis-v2.js` renders both analysis pages.
 - `data.html` provides export, import preview, conflict copies, and rollback. History includes unfinished rounds.

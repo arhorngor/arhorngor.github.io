@@ -6,6 +6,8 @@
   const penalty = x => x?.penalty === 'OB 前方補球' ? 2 : (x?.penalty || x?.club === '罰' ? 1 : 0);
   const strokes = shots => shots.reduce((n, x) => n + (penalty(x) || 1), 0);
   const validPar = p => Number.isInteger(p) && p >= 3 && p <= 6;
+  const scoringMode = r => r?.scoringMode === 'bogey' ? 'bogey' : 'standard';
+  const scoringPar = (officialPar, mode) => validPar(officialPar) ? officialPar + (mode === 'bogey' ? 1 : 0) : null;
   const completed = s => s.status === 'completed' || s.status === 'legacy_completed';
   const longClub = c => /^(?:\d+W|\d+H|\d+U|[1-6]I)$/.test(c);
   const wedge = c => ['50°', '56°', '58°', '60°'].includes(c);
@@ -22,7 +24,7 @@
     return {id: `slot-${index + 1}`, courseHoleId: hole, par: validPar(r.pars?.[hole - 1]) ? r.pars[hole - 1] : null, shots: [], status: 'not_started'};
   }
   function create(meta) {
-    const r = {...clone(meta), id: uid(), schemaVersion: 2, createdAt: new Date().toISOString(), status: 'in_progress'};
+    const r = {...clone(meta), scoringMode:scoringMode(meta), id: uid(), schemaVersion: 2, createdAt: new Date().toISOString(), status: 'in_progress'};
     r.roundSlots = order(r).map((h, i) => slot(h, i, r));
     r.currentSlotId = r.roundSlots[0].id;
     r.unassignedHoles = [];
@@ -58,6 +60,7 @@
   function validateRound(r) {
     if (!r || typeof r !== 'object' || Array.isArray(r) || typeof r.course !== 'string') throw Error('球局格式不正確');
     if (r.schemaVersion != null && r.schemaVersion !== 1 && r.schemaVersion !== 2) throw Error('不支援的球局版本');
+    if (r.scoringMode != null && !['standard','bogey'].includes(r.scoringMode)) throw Error('不支援的計分模式');
     if (!Number.isInteger(r.courseHoles) || r.courseHoles < 18 || r.courseHoles > 72) throw Error('球場洞數不正確');
     const checkShots = shots => {
       if (!Array.isArray(shots) || shots.length > 1000) throw Error('逐桿資料不正確');
@@ -88,7 +91,7 @@
     }
     return true;
   }
-  function stats(raw) {
+  function stats(raw, mode = scoringMode(raw)) {
     const r = normalize(raw), slots = r.roundSlots;
     const tally = list => {
       let score = 0, putts = 0, penalties = 0, shortShots = 0, recorded = 0, done = 0, par = 0, relativeScore = 0, relativeN = 0, gir = 0, girN = 0;
@@ -101,11 +104,13 @@
         if (!completed(s)) continue;
         done++;
         if (!validPar(s.par)) continue;
-        relativeN++; par += s.par; relativeScore += strokes(s.shots);
+        const targetPar=scoringPar(s.par,mode);
+        relativeN++; par += targetPar; relativeScore += strokes(s.shots);
         const firstPT = s.shots.findIndex(x => x.club === 'PT');
-        if (firstPT >= 0) { girN++; if (strokes(s.shots.slice(0, firstPT)) <= s.par - 2) gir++; }
+        if (firstPT >= 0) { girN++; if (strokes(s.shots.slice(0, firstPT)) <= targetPar - 2) gir++; }
       }
-      return {score, putts, penalties, shortShots, recorded, done, relativeN, relative: relativeN ? relativeScore - par : null, gir, girN};
+      const knownPars=list.map(s=>scoringPar(s.par,mode)).filter(p=>p!==null);
+      return {score, putts, penalties, shortShots, recorded, done, relativeN, relative: relativeN ? relativeScore - par : null, gir, girN, targetPar:knownPars.length===list.length?knownPars.reduce((a,b)=>a+b,0):null, knownParCount:knownPars.length};
     };
     return {...tally(slots), halves: [tally(slots.slice(0,9)), tally(slots.slice(9))], slots};
   }
@@ -127,7 +132,7 @@
     for(let i=0;i<9;i++)next=replaceHole(next,next.roundSlots[index+i].id,section*9+i+1);
     return next;
   }
-  const api = {clone, uid, penalty, strokes, validPar, completed, longClub, wedge, order, create, normalize, validateRound, stats, replaceHole, replaceSection, holeLabel};
+  const api = {clone, uid, penalty, strokes, validPar, scoringMode, scoringPar, completed, longClub, wedge, order, create, normalize, validateRound, stats, replaceHole, replaceSection, holeLabel};
   root.RoundCore = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window === 'undefined' ? globalThis : window);

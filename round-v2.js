@@ -8,7 +8,7 @@ let entry,round,baseline,slotId,hole,shots=[],par,bag=DEFAULT,unsaved=false;
 const penaltyStrokes=C.penalty,strokeCount=C.strokes;
 function current(){return round.roundSlots.find(s=>s.id===slotId)}
 function holeLabel(n){return C.holeLabel(round,n)}
-function rel(){if(!C.validPar(par)||!shots.length)return '';const d=strokeCount(shots)-par;return d===0?'E':d>0?'+'+d:String(d)}
+function rel(){if(!C.validPar(par)||!shots.length)return '';const d=strokeCount(shots)-C.scoringPar(par,C.scoringMode(round));return d===0?'E':d>0?'+'+d:String(d)}
 function save(markComplete=false){
   const s=current();s.shots=C.clone(shots);s.par=par;
   s.status=markComplete?'completed':shots.length?'in_progress':'not_started';
@@ -29,10 +29,10 @@ function render(){
   let running=0;
   const rec=shots.length?shots.map((s,i)=>{const count=penaltyStrokes(s)||1,from=running+1;running+=count;return `<button class="shot ${penaltyStrokes(s)?'penaltyshot':''}" data-shot="${i}">${s.trouble||s.teeTrouble?'⚠ ':''}${from===running?running:from+'–'+running}·${penaltyStrokes(s)?'罰'+count+' '+esc(s.penalty||'其他'):esc(s.club)}${s.putt?' '+esc(s.putt):''}${s.distance?' '+esc(s.distance)+'y':''}</button>`}).join(''):'<span class="hint">照順序點剛才使用的球桿</span>';
   const canPick=round.course==='無場地'||!C.validPar(par);
-  const parUI=`<div class="parline"><span class="parlabel">${par?'Par '+par:'Par —'}</span>${canPick?[3,4,5].map(p=>`<button class="parpick ${par===p?'on':''}" data-par="${p}">${p}</button>`).join(''):''}<span class="relative">${rel()}</span></div>`;
-  app.innerHTML=`<main class="round"><header class="top"><div class="topmain"><div><div class="ey">${esc(round.course)} · 本場 ${index+1}/18${C.completed(current())?' · 已完成':''}</div><div class="hole">${esc(holeLabel(hole))}</div></div><div class="score"><span>本洞</span><b>${strokeCount(shots)}</b><span>桿</span></div></div><div class="navrow"><button class="tool home" id="home">⌂ 首頁</button>${parUI}<button class="tool jump" id="jump">跳洞 ▾</button></div></header><section class="clubs">${clubs}</section><section class="record">${rec}</section><footer class="bottom"><button class="undo" id="undo">↶</button><button class="finish" id="finish">完成本洞</button></footer><button id="summary" style="position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 70px);z-index:8;border:0;border-radius:18px;background:#176ea8;color:#fff;padding:8px 12px;font-size:10px;font-weight:900">總覽 / 分析</button></main>`;
+  const parUI=`<div class="parline"><span class="parlabel">${C.scoringMode(round)==='bogey'?'新手 Par ':'Par '}${C.scoringPar(par,C.scoringMode(round))??'—'}</span>${canPick?[3,4,5].map(p=>`<button class="parpick ${par===p?'on':''}" data-par="${p}">${C.scoringPar(p,C.scoringMode(round))}</button>`).join(''):''}<span class="relative">${rel()}</span></div>`;
+  app.innerHTML=`<main class="round"><header class="top"><div class="topmain"><div><div class="ey">${esc(round.course)}${C.scoringMode(round)==='bogey'?' · Bogey Base':''} · 本場 ${index+1}/18${C.completed(current())?' · 已完成':''}</div><div class="hole">${esc(holeLabel(hole))}</div></div><div class="score"><span>本洞</span><b>${strokeCount(shots)}</b><span>桿</span></div></div><div class="navrow"><button class="tool home" id="home">⌂ 首頁</button>${parUI}<button class="tool jump" id="jump">跳洞 ▾</button></div></header><section class="clubs">${clubs}</section><section class="record">${rec}</section><footer class="bottom"><button class="undo" id="undo">↶</button><button class="finish" id="finish">完成本洞</button></footer><button id="summary" style="position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 70px);z-index:8;border:0;border-radius:18px;background:#176ea8;color:#fff;padding:8px 12px;font-size:10px;font-weight:900">總覽 / 分析</button></main>`;
   document.getElementById('home').onclick=()=>{if(!unsaved)location.href='./'};
-  document.getElementById('summary').onclick=()=>{if(!unsaved)location.href='summary.html?v=20'};
+  document.getElementById('summary').onclick=()=>{if(!unsaved)location.href='summary.html?v=21'};
   document.getElementById('jump').onclick=()=>{if(!unsaved)showJump()};
   document.getElementById('undo').onclick=undo;document.getElementById('finish').onclick=finishHole;
   document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>{if(!unsaved)addClub(b.dataset.club)});
@@ -78,7 +78,7 @@ function finishHole(){
   if(unsaved)return;if(!shots.length){alert('本洞還沒有桿數，不能標記完成。');return;}
   save(true);const index=round.roundSlots.findIndex(s=>s.id===slotId);
   const next=[...round.roundSlots.slice(index+1),...round.roundSlots.slice(0,index)].find(s=>!C.completed(s));
-  showCaddie(()=>{if(next)loadSlot(next.id);else location.href='summary.html?v=20'});
+  showCaddie(()=>{if(next)loadSlot(next.id);else location.href='summary.html?v=21'});
 }
 function initRound(){
   try{
