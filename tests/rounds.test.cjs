@@ -24,6 +24,44 @@ function fill(r,i,shots,par=4,status='completed'){Object.assign(r.roundSlots[i],
 const makeBackup=(r)=>({format:'arhorngor-backup',version:1,raw:{'arhorngor-history':JSON.stringify([r])}});
 const extractCards=html=>Object.fromEntries([...html.matchAll(/class="card"><b>(.*?)<\/b><span>(.*?)<\/span>/g)].map(m=>[m[2],m[1]]));
 
+test('Miramar official four sections: all 16 ordered pairs, both modes, UI and stored scores',()=>{
+ const expected=[[4,5,3,4,4,5,3,4,4],[4,3,4,5,4,4,3,5,4],[4,3,5,4,4,3,4,4,5],[4,4,5,4,3,4,4,3,5]];
+ for(let a=0;a<4;a++)for(let b=0;b<4;b++)for(const mode of ['standard','bogey']){
+  const e=env();e.run('courses.js');const course=e.context.ARHORNGOR_COURSES.find(c=>c.name==='美麗華（官方四區）');
+  assert.deepEqual(Array.from(course.sections),['北區','東區','南區','西區']);assert.deepEqual(Array.from(course.pars),expected.flat());
+  e.document.querySelector=()=>({value:mode});e.run('app.js');e.run('new-round-v2.js');
+  vm.runInContext("showStart(ARHORNGOR_COURSES.find(c=>c.name==='美麗華（官方四區）'))",e.context);
+  vm.runInContext(`startHole=${a*9+1}`,e.context);e.nodes.secondSection.value=String(b);vm.runInContext('updateBogeyGoal();beginRound()',e.context);
+  assert.match(e.nodes.bogeyGoal.textContent,/新手 Par 90/);
+  const entry=e.S.active(),r=entry.round;
+  assert.deepEqual(Array.from(r.roundSlots,s=>s.par),[...expected[a],...expected[b]]);
+  assert.equal(new Set(r.roundSlots.map(s=>s.id)).size,18);
+  assert.equal(C.holeLabel(r,r.roundSlots[0].courseHoleId),course.sections[a]+' 第1洞');
+  assert.equal(C.holeLabel(r,r.roundSlots[9].courseHoleId),course.sections[b]+' 第1洞');
+  r.roundSlots.forEach(s=>{s.shots=[...Array(s.par-1).fill({club:'9I'}),{club:'PT'},{club:'PT'}];s.status='completed'});
+  C.validateRound(r);const before=JSON.stringify(r);
+  for(const basis of ['standard','bogey']){
+   const t=C.stats(r,basis);assert.equal(t.score,90);assert.equal(t.targetPar,basis==='bogey'?90:72);assert.equal(t.relative,basis==='bogey'?0:18);
+   t.halves.forEach(h=>{assert.equal(h.score,45);assert.equal(h.targetPar,basis==='bogey'?45:36)});
+  }
+  assert.equal(C.stats(r).targetPar,mode==='bogey'?90:72);assert.equal(JSON.stringify(r),before);
+  e.S.update(entry.id,r);e.S.finish(entry.id,r);assert.equal(C.stats(e.S.selected().round).score,90);
+ }
+});
+
+test('Miramar data addition preserves old placeholders, West/South route and saved snapshots',()=>{
+ const raw=legacy({course:'美麗華',courseHoles:36,sections:['A區','B區','C區','D區'],pars:null});
+ const initial={'arhorngor-history':JSON.stringify([raw])},e=env(initial);const before=e.localStorage.dump();e.run('courses.js');
+ assert.deepEqual(e.localStorage.dump(),before);assert.equal(e.context.ARHORNGOR_COURSES.find(c=>c.name==='美麗華').pars,undefined);
+ assert.deepEqual(Array.from(e.context.ARHORNGOR_COURSES.find(c=>c.name==='美麗華').sections),raw.sections);
+ const official=e.context.ARHORNGOR_COURSES.find(c=>c.name==='美麗華（官方四區）');
+ assert.deepEqual(Array.from(e.context.ARHORNGOR_COURSES.find(c=>c.name==='美麗華（西／南）').pars),[...Array.from(official.pars.slice(27)),...Array.from(official.pars.slice(18,27))]);
+ const r=C.create({course:official.name,courseHoles:36,pars:official.pars,sections:official.sections,playSections:[3,2]});
+ fill(r,0,[{club:'1W',trouble:true},{club:'罰',penalty:'OB 前方補球'},{club:'PT'}],4);
+ fill(r,9,[{club:'1W'},{club:'罰',penalty:'OB 原地重打'},{club:'PT'}],4);
+ assert.equal(C.stats(r).score,7);assert.equal(C.stats(r).penalties,3);
+});
+
 test('18 holes starting at 10 preserve actual front/back position order',()=>{
  const r=C.create(meta({startHole:10}));assert.deepEqual(r.roundSlots.map(s=>s.courseHoleId),[10,11,12,13,14,15,16,17,18,1,2,3,4,5,6,7,8,9]);
  fill(r,0,[{club:'1W'}]);fill(r,9,[{club:'1W'},{club:'PT'}]);assert.equal(C.stats(r).halves[0].score,1);assert.equal(C.stats(r).halves[1].score,2);
