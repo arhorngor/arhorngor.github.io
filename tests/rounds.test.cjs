@@ -233,3 +233,30 @@ test('East then North advances from ninth to North first and survives reload in 
   assert.match(other.nodes.app.innerHTML,/北區 第1洞/);assert.equal(other.S.active().round.roundSlots.filter(s=>s.status==='completed').length,9);
  }
 });
+
+test('pre-putt distribution counts only first PT per completed slot and preserves stored data',()=>{
+ const e=env(),a=e.S.create(meta());const r=a.round;
+ const shots=(club,extra={})=>[{club,...extra},{club:'PT',putt:'10y'},{club:'PT',putt:'OK'}];
+ fill(r,0,shots('PW'));fill(r,1,shots('9I'));fill(r,2,shots('4H'));
+ fill(r,3,[{club:'58°',distance:30},{club:'58°',distance:20,bunker:true},{club:'PT',putt:'3y'},{club:'PT',putt:'OK'}]);
+ fill(r,4,[{club:'PT',putt:'<3m'}]);
+ fill(r,5,[{club:'1W'},{club:'罰',penalty:'OB 前方補球'},{club:'PT',putt:'7m+'}]);
+ fill(r,6,shots('PW'),4,'in_progress');
+ fill(r,9,shots('PW'));r.roundSlots[9].courseHoleId=r.roundSlots[0].courseHoleId;
+ e.S.update(a.id,r);const before=e.localStorage.dump();e.run('analysis-v2.js');
+ const d=vm.runInContext('prePuttDistribution(RoundStore.active().round)',e.context);
+ assert.equal(d.eligible,7);assert.equal(d.attributed,5);assert.equal(d.unattributed,2);
+ assert.equal(d.rows.find(x=>x.club==='PW').count,2);assert.equal(d.rows.find(x=>x.club==='58°').count,1);
+ assert.equal(d.rows.find(x=>x.club==='58°').distances.get('20y'),1);assert.equal(d.rows.find(x=>x.club==='58°').firstPutts.get('3y'),1);
+ assert.match(e.nodes.app.innerHTML,/進入推桿前一桿/);assert.match(e.nodes.app.innerHTML,/並非各球桿成功率/);
+ assert.match(e.nodes.app.innerHTML,/0% \(0\/1\)/); // The first 58-degree attempt still fails the existing direct-to-PT metric.
+ assert.deepEqual(e.localStorage.dump(),before);
+ e.context.location.search='?basis=bogey';e.run('analysis-v2.js');assert.equal(vm.runInContext('prePuttDistribution(RoundStore.active().round).attributed',e.context),5);
+ e.S.finish(a.id,r);e.document.body.dataset.mode='history';e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/進入推桿前一桿/);
+});
+
+test('pre-putt distribution empty state and imported labels are safe',()=>{
+ const e=env(),a=e.S.create(meta());e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/尚無可統計的前一桿紀錄/);
+ const r=fill(a.round,0,[{club:'<img src=x>'},{club:'PT',putt:'<3m'}]);e.S.update(a.id,r);e.run('analysis-v2.js');
+ assert.doesNotMatch(e.nodes.app.innerHTML,/<img src=x>/);assert.match(e.nodes.app.innerHTML,/&lt;3m × 1/);
+});
