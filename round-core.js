@@ -10,7 +10,7 @@
   const scoringPar = (officialPar, mode) => validPar(officialPar) ? officialPar + (mode === 'bogey' ? 1 : 0) : null;
   const completed = s => s.status === 'completed' || s.status === 'legacy_completed';
   const longClub = c => /^(?:\d+W|\d+H|\d+U|[1-6]I)$/.test(c);
-  const wedge = c => ['50°', '56°', '58°', '60°'].includes(c);
+  const wedge = c => /^(?:[PAGSL]W?|\d+°)$/i.test(String(c).trim());
   function order(r) {
     if (Array.isArray(r.playOrder) && r.playOrder.length === 18) return [...r.playOrder];
     const count = r.courseHoles || 18, start = r.startHole || 1;

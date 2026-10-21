@@ -300,3 +300,24 @@ test('PW distance input and skip work without adding steps for 9I and woods',()=
  assert.equal(e.S.active().round.roundSlots[0].shots[2].distance,100);
  vm.runInContext('addClub("3W")',e.context);assert.equal(e.S.active().round.roundSlots[0].shots.length,4);
 });
+
+test('every wedge in the bag supports distance, short-chip scoring and distance breakdown',()=>{
+ const source=fs.readFileSync(path.join(root,'bag.js'),'utf8');
+ const list=JSON.parse(source.match(/\['WEDGE',(\[[^\]]+\])/)[1].replaceAll("'",'"'));
+ assert.deepEqual(list,['PW','AW','GW','SW','LW','46°','48°','50°','52°','54°','56°','58°','60°']);
+ for(const club of [...list,'P','A','G','S','L']){
+  assert.equal(C.wedge(club),true,club);
+  const e=env();e.S.create(meta());for(const f of ['round-v2.js','round-actions.js','caddies.js'])e.run(f);
+  vm.runInContext('initRound()',e.context);e.context.addClub(club);
+  assert.match(e.nodes.modalBody.innerHTML,/出手前距離/);assert.equal(e.S.active().round.roundSlots[0].shots.length,0);
+  const button={dataset:{d:'50'}};e.document.querySelectorAll=q=>q==='[data-d]'?[button]:[];
+  e.context.showWedgeDistance(club);button.onclick();
+  assert.equal(e.S.active().round.roundSlots[0].shots[0].distance,50);
+  const a=e.S.active(),r=fill(a.round,0,[{club:'1W',trouble:false},{club,distance:50},{club:'PT',putt:'3y'}]);e.S.update(a.id,r);
+  const before=e.localStorage.dump();e.run('analysis-v2.js');const ability=e.context.fiveAbility(r);
+  assert.equal(ability.short.sum,100,club);assert.equal(ability.short.n,1,club);
+  assert.match(e.nodes.app.innerHTML,/50碼<\/td><td>1\/1（100%）/);
+  assert.ok(e.nodes.app.innerHTML.includes(`<div class="wc wh">${club}</div>`));assert.deepEqual(e.localStorage.dump(),before);
+ }
+ for(const club of ['9I','4H','3W','PT','罰'])assert.equal(C.wedge(club),false);
+});
