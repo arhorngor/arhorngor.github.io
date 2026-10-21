@@ -145,7 +145,7 @@ test('rollback archives current contents, accepts a corrupt main, and restores v
  const e=env(),a=e.S.create(meta());e.S.create(meta());e.localStorage.setItem(e.S.KEY,'broken');e.S.rollback();assert.equal(e.S.active().id,a.id);const archiveKeys=Object.keys(e.localStorage.dump()).filter(k=>k.startsWith('arhorngor-import-original-'));assert.ok(archiveKeys.some(k=>JSON.parse(e.localStorage.getItem(k)).raw[e.S.KEY]==='broken'));
 });
 test('active and history overview and analysis agree on E5 and repeated physical holes',()=>{
- const e=env(),a=e.S.create(meta({pars:Array(18).fill(5)}));let r=fill(a.round,0,[{club:'1W'},{club:'罰',penalty:'OB 前方補球'},{club:'9I'},{club:'PT',putt:'1y'}],5);r=C.replaceHole(r,r.roundSlots[9].id,1);fill(r,9,[{club:'PT',putt:'3–7m'}],5);e.S.update(a.id,r);e.run('report-v2.js');let cards=extractCards(e.nodes.app.innerHTML);assert.equal(cards['已記錄總桿'],'6');assert.equal(cards['GIR推估 · 1/2'],'50%');e.run('analysis-v2.js');cards=extractCards(e.nodes.app.innerHTML);assert.equal(cards['總桿'],'6');assert.match(e.nodes.app.innerHTML,/<b>50<\/b>攻果嶺/);assert.match(e.nodes.app.innerHTML,/3–7m/);assert.doesNotMatch(e.nodes.app.innerHTML,/3–7y/);
+ const e=env(),a=e.S.create(meta({pars:Array(18).fill(5)}));let r=fill(a.round,0,[{club:'1W'},{club:'罰',penalty:'OB 前方補球'},{club:'9I'},{club:'PT',putt:'1y'}],5);r=C.replaceHole(r,r.roundSlots[9].id,1);fill(r,9,[{club:'PT',putt:'3–7m'}],5);e.S.update(a.id,r);e.run('report-v2.js');let cards=extractCards(e.nodes.app.innerHTML);assert.equal(cards['已記錄總桿'],'6');assert.equal(cards['GIR推估 · 1/2'],'50%');e.run('analysis-v2.js');cards=extractCards(e.nodes.app.innerHTML);assert.equal(cards['總桿'],'6');assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);assert.match(e.nodes.app.innerHTML,/3–7m/);assert.doesNotMatch(e.nodes.app.innerHTML,/3–7y/);
  e.S.finish(a.id,r);e.document.body.dataset.mode='history';e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['已記錄總桿'],'6');e.run('analysis-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['總桿'],'6');
 });
 test('imported text is escaped in overview and analysis',()=>{
@@ -179,7 +179,7 @@ test('Bogey Base survives backup/import and finish while original Par stays inta
 test('overview and analysis default to round mode; comparison changes no storage',()=>{
  const e=env(),a=e.S.create(meta({scoringMode:'bogey'})),r=fill(a.round,0,[{club:'1W'},{club:'9I'},{club:'58°'},{club:'PT'},{club:'PT'}]);e.S.update(a.id,r);const before=e.localStorage.getItem(e.S.KEY);
  e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對新手Par · 1洞'],'E');assert.match(e.nodes.app.innerHTML,/本場新手 Par <strong>90/);e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);assert.match(e.nodes.app.innerHTML,/並非正式GIR/);
- e.context.location.search='?basis=standard';e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對Par · 1洞'],'+1');e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>0<\/b>攻果嶺/);assert.equal(e.localStorage.getItem(e.S.KEY),before);
+ e.context.location.search='?basis=standard';e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對Par · 1洞'],'+1');e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);assert.equal(e.localStorage.getItem(e.S.KEY),before);
  e.S.finish(a.id,r);e.document.body.dataset.mode='history';e.context.location.search='?basis=bogey';e.run('report-v2.js');assert.equal(extractCards(e.nodes.app.innerHTML)['相對新手Par · 1洞'],'E');e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/<b>100<\/b>攻果嶺/);
 });
 test('recording and caddie use beginner Par; navigation and save retain official Par',()=>{
@@ -259,4 +259,44 @@ test('pre-putt distribution empty state and imported labels are safe',()=>{
  const e=env(),a=e.S.create(meta());e.run('analysis-v2.js');assert.match(e.nodes.app.innerHTML,/尚無可統計的前一桿紀錄/);
  const r=fill(a.round,0,[{club:'<img src=x>'},{club:'PT',putt:'<3m'}]);e.S.update(a.id,r);e.run('analysis-v2.js');
  assert.doesNotMatch(e.nodes.app.innerHTML,/<img src=x>/);assert.match(e.nodes.app.innerHTML,/&lt;3m × 1/);
+});
+
+test('five-axis v2 separates tasks, counts E5, and never rewrites legacy history',()=>{
+ const e=env(),a=e.S.create(meta());const r=a.round,PT={club:'PT',putt:'5y'};
+ fill(r,0,[{club:'1W',trouble:false},{club:'9I'},PT,PT]);
+ fill(r,1,[{club:'1W',trouble:true},{club:'罰',penalty:'OB 前方補球'},{club:'PW',distance:50},PT,PT,PT]);
+ fill(r,2,[{club:'1W'},{club:'58°',distance:30,bunker:true},{club:'58°',distance:10},PT]);
+ fill(r,3,[{club:'1W',trouble:true},{club:'4H'},PT,PT]);
+ fill(r,4,[{club:'1W',trouble:false},{club:'PW',distance:70},PT],4,'in_progress');
+ e.S.update(a.id,r);const before=e.localStorage.dump();e.run('analysis-v2.js');
+ const a2=e.context.fiveAbility(r);
+ for(const [key,expected] of Object.entries({drive:[100,3],approach:[300,4],short:[200,2],rescue:[0,1],putt:[300,4]}))assert.deepEqual([a2[key].sum,a2[key].n],expected,key);
+ assert.match(e.nodes.app.innerHTML,/125碼以上〔依球桿推定〕/);
+ assert.match(e.nodes.app.innerHTML,/50碼<\/td><td>1\/1（100%）/);
+ assert.match(e.nodes.app.innerHTML,/short|短切/);
+ e.context.location.search='?basis=bogey';e.run('analysis-v2.js');
+ assert.deepEqual(JSON.parse(JSON.stringify(e.context.fiveAbility(r))),JSON.parse(JSON.stringify(a2)));
+ assert.deepEqual(e.localStorage.dump(),before);
+ e.S.finish(a.id,r);e.document.body.dataset.mode='history';const finished=e.localStorage.dump();e.run('analysis-v2.js');assert.deepEqual(e.localStorage.dump(),finished);
+});
+
+test('five-axis missing observations remain unknown and sand is excluded from short chips',()=>{
+ const e=env();e.run('analysis-v2.js');const r=C.create(meta());
+ fill(r,0,[{club:'PT'}]);fill(r,1,[{club:'1W'},{club:'58°',distance:20,bunker:true},{club:'PT'}]);
+ fill(r,2,[{club:'1W'},{club:'PW',distance:50}],4,'in_progress');
+ const a=e.context.fiveAbility(r);assert.equal(a.drive.n,0);assert.equal(a.short.n,0);assert.equal(a.rescue.sum,100);assert.equal(a.rescue.n,1);assert.equal(a.putt.n,1);assert.equal(a.approach.n,1);
+});
+
+test('PW distance input and skip work without adding steps for 9I and woods',()=>{
+ const e=env();e.S.create(meta());for(const f of ['round-v2.js','round-actions.js','caddies.js'])e.run(f);
+ vm.runInContext('initRound();addClub("9I")',e.context);assert.equal(e.S.active().round.roundSlots[0].shots[0].trouble,false);
+ vm.runInContext('showShotPenalty(0)',e.context);assert.match(e.nodes.modalBody.innerHTML,/data-trouble/);
+ vm.runInContext('addClub("PW")',e.context);assert.match(e.nodes.modalBody.innerHTML,/出手前距離/);assert.match(e.nodes.modalBody.innerHTML,/120/);
+ e.nodes.skipDistance.onclick();assert.equal(e.S.active().round.roundSlots[0].shots[1].club,'PW');assert.equal(e.S.active().round.roundSlots[0].shots[1].distance,undefined);
+ vm.runInContext('addClub("PW")',e.context);
+ e.document.querySelectorAll=selector=>selector==='[data-d]'?[{dataset:{d:'100'}}]:[];
+ const button={dataset:{d:'100'}};e.document.querySelectorAll=selector=>selector==='[data-d]'?[button]:[];
+ vm.runInContext('showWedgeDistance("PW")',e.context);button.onclick();
+ assert.equal(e.S.active().round.roundSlots[0].shots[2].distance,100);
+ vm.runInContext('addClub("3W")',e.context);assert.equal(e.S.active().round.roundSlots[0].shots.length,4);
 });
